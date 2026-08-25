@@ -90,3 +90,9 @@ async def handle_media_stream(websocket: WebSocket):
         print("🔌 Twilio WebSocket disconnected")
     except Exception as e:
         print(f"❌ WebSocket error: {e}")
+
+@app.websocket("/test")
+async def test_websocket(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_text("WebSocket is working!")
+    await websocket.close()
