@@ -15,7 +15,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 GEMINI_LIVE_URL = f"wss://generativelanguage.googleapis.com/ws/live/v1beta/models/gemini-3.1-flash-live-preview:live?key={os.getenv('GEMINI_API_KEY')}"
 
-@app.get("/voice")
+@app.post("/voice")
 async def voice():
     """Return TwiML to start Media Stream."""
     resp = VoiceResponse()
