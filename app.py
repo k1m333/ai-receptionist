@@ -24,27 +24,11 @@ async def voice():
 
 @app.websocket("/media-stream")
 async def handle_media_stream(websocket: WebSocket):
-    await websocket.accept()
-    print("🔗 Twilio WebSocket connected")
-
     try:
-        # Wait for the first message (should be a 'start' event)
-        data = await websocket.receive_text()
-        print(f"📩 Received from Twilio: {data[:200]}...")
-
-        # Send a simple acknowledgment to keep the connection alive
-        await websocket.send_text('{"event": "connected"}')
-
-        # Keep the connection open and listen for more messages
-        while True:
-            try:
-                message = await websocket.receive_text()
-                print(f"📩 Received from Twilio: {message[:100]}...")
-                # You'll later add logic to forward this to Gemini
-            except Exception as e:
-                print(f"❌ Error receiving message: {e}")
-                break
-
+        await websocket.accept()
+        print("🔗 Twilio WebSocket connected")
+        await websocket.send_text("Hello from AI Receptionist!")
+        print("📤 Sent welcome message")
     except Exception as e:
         print(f"❌ WebSocket error: {e}")
 
