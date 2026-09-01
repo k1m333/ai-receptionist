@@ -22,13 +22,18 @@ async def voice():
     resp.append(stream)
     return Response(content=str(resp), media_type="text/xml")
 
+from fastapi import WebSocket
+
 @app.websocket("/media-stream")
 async def handle_media_stream(websocket: WebSocket):
+    await websocket.accept()
+    print("🔗 Twilio WebSocket connected!")
     try:
-        await websocket.accept()
-        print("🔗 Twilio WebSocket connected")
-        await websocket.send_text("Hello from AI Receptionist!")
-        print("📤 Sent welcome message")
+        while True:
+            data = await websocket.receive_text()
+            print(f"📩 Received: {data[:100]}")
+            # Echo back a test message to keep the connection alive
+            await websocket.send_text('{"test": "pong"}')
     except Exception as e:
         print(f"❌ WebSocket error: {e}")
 
