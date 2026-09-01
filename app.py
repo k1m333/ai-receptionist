@@ -18,7 +18,7 @@ GEMINI_LIVE_URL = f"wss://generativelanguage.googleapis.com/ws/live/v1beta/model
 @app.post("/voice")
 async def voice():
     resp = VoiceResponse()
-    stream = Stream(url="ws://auto-ai-receptionist-websocket.onrender.com/media-stream")
+    stream = Stream(url="//auto-ai-receptionist-websocket.onrender.com/media-stream")
     resp.append(stream)
     return Response(content=str(resp), media_type="text/xml")
 
