@@ -2,63 +2,25 @@ import asyncio
 import json
 import os
 import websockets
-from dotenv import load_dotenv
-
-load_dotenv()
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-12-17"
 
 async def handle_twilio_stream(websocket):
     print("🔗 Twilio WebSocket connected!")
     
     try:
-        async with websockets.connect(
-            OPENAI_URL,
-            extra_headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "OpenAI-Beta": "realtime=v1"
-            }
-        ) as openai_ws:
-            print("✅ Connected to OpenAI Realtime API!")
-            
-            # Send session config
-            await openai_ws.send(json.dumps({
-                "type": "session.update",
-                "session": {
-                    "modalities": ["text", "audio"],
-                    "instructions": "You are a helpful AI receptionist for an auto service center. Be concise and friendly.",
-                    "voice": "alloy",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                }
+        # Send a welcome message to Twilio
+        await websocket.send(json.dumps({
+            "event": "media",
+            "media": {"payload": "SGVsbG8gZnJvbSBBSSBSZWNlcHRpb25pc3Qh"}  # "Hello from AI Receptionist!" in base64
+        }))
+        
+        # Echo any received messages
+        async for message in websocket:
+            print(f"📩 Received from Twilio: {message[:100]}")
+            # Echo back a test response
+            await websocket.send(json.dumps({
+                "event": "media",
+                "media": {"payload": "RXhjZWxsZW50ISBZb3UgY29ubmVjdGVkIQ=="}  # "Excellent! You connected!"
             }))
-            
-            # Bridge messages
-            while True:
-                # Receive from Twilio
-                message = await websocket.recv()
-                data = json.loads(message)
-                
-                if data.get("event") == "media":
-                    audio = data["media"]["payload"]
-                    await openai_ws.send(json.dumps({
-                        "type": "input_audio_buffer.append",
-                        "audio": audio
-                    }))
-                
-                # Receive from OpenAI and send to Twilio
-                try:
-                    openai_msg = await asyncio.wait_for(openai_ws.recv(), timeout=0.1)
-                    openai_data = json.loads(openai_msg)
-                    if "audio" in openai_data:
-                        await websocket.send(json.dumps({
-                            "event": "media",
-                            "media": {"payload": openai_data["audio"]}
-                        }))
-                except asyncio.TimeoutError:
-                    continue
-                    
     except Exception as e:
         print(f"❌ Error: {e}")
 
