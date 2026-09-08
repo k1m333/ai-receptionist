@@ -13,10 +13,18 @@ async def handle_twilio_stream(websocket):
     print("🔗 Twilio WebSocket connected!")
     
     try:
-        # Wait for the first message (Twilio sends 'start' event)
+        # Wait for the first message
         message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-        data = json.loads(message)
-        print(f"📩 First message from Twilio: {data.get('event')}")
+        print(f"📩 Raw message: {message[:100]}...")
+        
+        try:
+            data = json.loads(message)
+        except json.JSONDecodeError:
+            print("❌ Received non-JSON message (likely a test from wscat)")
+            await websocket.send("Echo: Please use this server with Twilio Media Streams")
+            return
+        
+        print(f"📩 Event: {data.get('event')}")
         
         if data.get("event") != "start":
             print("❌ Expected 'start' event, got something else")
@@ -24,7 +32,7 @@ async def handle_twilio_stream(websocket):
         
         print("📞 Twilio call started")
         
-        # Now connect to OpenAI
+        # Connect to OpenAI
         print("🔄 Connecting to OpenAI Realtime...")
         async with websockets.connect(
             OPENAI_URL,
@@ -68,7 +76,7 @@ async def handle_twilio_stream(websocket):
                         break
                         
                 except asyncio.TimeoutError:
-                    # No message from Twilio, check OpenAI
+                    # Check OpenAI for audio
                     try:
                         openai_msg = await asyncio.wait_for(openai_ws.recv(), timeout=0.2)
                         openai_data = json.loads(openai_msg)
