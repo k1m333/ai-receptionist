@@ -10,6 +10,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-12-17"
 
 async def handle_twilio_stream(websocket):
+    print("🔗 WebSocket connection attempt")
+    # Log the headers to see what Twilio is sending
+    print(f"📋 Headers: {websocket.request_headers}")
+    await websocket.accept()
+    print("✅ WebSocket connection accepted!")
     print("🔗 Twilio WebSocket connected!")
     
     try:
