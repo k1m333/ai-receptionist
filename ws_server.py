@@ -1,106 +1,30 @@
 import asyncio
-import json
-import os
 import websockets
-from dotenv import load_dotenv
-
-load_dotenv()
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-12-17"
+import os
 
 async def handle_twilio_stream(websocket):
     print("🔗 WebSocket connection attempt")
-    # Log the headers to see what Twilio is sending
-    print(f"📋 Headers: {websocket.request_headers}")
-    await websocket.accept()
-    print("✅ WebSocket connection accepted!")
-    print("🔗 Twilio WebSocket connected!")
+    print(f"📋 Path: {websocket.path}")
     
     try:
-        # Wait for the first message
-        message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-        print(f"📩 Raw message: {message[:100]}...")
+        await websocket.accept()
+        print("✅ WebSocket connection accepted!")
         
-        try:
-            data = json.loads(message)
-        except json.JSONDecodeError:
-            print("❌ Received non-JSON message (likely a test from wscat)")
-            await websocket.send("Echo: Please use this server with Twilio Media Streams")
-            return
-        
-        print(f"📩 Event: {data.get('event')}")
-        
-        if data.get("event") != "start":
-            print("❌ Expected 'start' event, got something else")
-            return
-        
-        print("📞 Twilio call started")
-        
-        # Connect to OpenAI
-        print("🔄 Connecting to OpenAI Realtime...")
-        async with websockets.connect(
-            OPENAI_URL,
-            extra_headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "OpenAI-Beta": "realtime=v1"
-            },
-            timeout=10
-        ) as openai_ws:
-            print("✅ Connected to OpenAI Realtime API!")
-            
-            # Send session config
-            await openai_ws.send(json.dumps({
-                "type": "session.update",
-                "session": {
-                    "modalities": ["text", "audio"],
-                    "instructions": "You are a helpful AI receptionist. Be concise and friendly.",
-                    "voice": "alloy",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
-                }
-            }))
-            print("📤 Session config sent")
-            
-            # Main bridge loop
-            while True:
-                try:
-                    # Receive from Twilio
-                    twilio_msg = await asyncio.wait_for(websocket.recv(), timeout=2.0)
-                    twilio_data = json.loads(twilio_msg)
-                    
-                    if twilio_data.get("event") == "media":
-                        audio = twilio_data["media"]["payload"]
-                        await openai_ws.send(json.dumps({
-                            "type": "input_audio_buffer.append",
-                            "audio": audio
-                        }))
-                        print("🎵 Forwarded audio to OpenAI")
-                    elif twilio_data.get("event") == "stop":
-                        print("📞 Twilio call ended")
-                        break
-                        
-                except asyncio.TimeoutError:
-                    # Check OpenAI for audio
-                    try:
-                        openai_msg = await asyncio.wait_for(openai_ws.recv(), timeout=0.2)
-                        openai_data = json.loads(openai_msg)
-                        if openai_data.get("type") == "response.audio.delta":
-                            audio = openai_data.get("delta", "")
-                            if audio:
-                                await websocket.send(json.dumps({
-                                    "event": "media",
-                                    "media": {"payload": audio}
-                                }))
-                                print("🎵 Forwarded audio to Twilio")
-                    except asyncio.TimeoutError:
-                        continue
-                    except Exception as e:
-                        print(f"❌ OpenAI error: {e}")
-                        break
-                        
-    except asyncio.TimeoutError:
-        print("❌ Timeout waiting for Twilio 'start' event")
+        while True:
+            try:
+                message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+                print(f"📩 Received: {message[:200]}...")
+                
+                # Send a test response
+                await websocket.send('{"event": "media", "media": {"payload": "SGVsbG8gZnJvbSBBSSBSZWNlcHRpb25pc3Qh"}}')
+                print("📤 Sent test audio response")
+                
+            except asyncio.TimeoutError:
+                print("⏳ No message received, keeping connection alive")
+            except websockets.exceptions.ConnectionClosed:
+                print("🔌 Twilio disconnected")
+                break
+                
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
