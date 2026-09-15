@@ -16,7 +16,10 @@ async def handle_twilio_stream(websocket):
         # Connect to OpenAI Realtime
         print("🔄 Connecting to OpenAI Realtime...")
         async with websockets.connect(
-            OPENAI_URL
+            OPENAI_URL,
+            additional_headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}"
+            }
         ) as openai_ws:
             print("✅ Connected to OpenAI Realtime!")
             
@@ -67,7 +70,7 @@ async def handle_twilio_stream(websocket):
                     openai_data = json.loads(openai_msg)
                     print(f"📥 OpenAI event: {openai_data.get('type')}")
                     
-                    if openai_data.get("type") == "response.audio.delta":
+                    if openai_data.get("type") == "response.output_audio.delta":
                         audio = openai_data.get("delta", "")
                         if audio:
                             await websocket.send(json.dumps({
