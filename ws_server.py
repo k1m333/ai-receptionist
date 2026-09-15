@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-12-17"
+OPENAI_URL = "wss://api.openai.com/v1/realtime?model=gpt-realtime"
 
 async def handle_twilio_stream(websocket):
     print("🔗 Twilio client connected!")
@@ -16,11 +16,7 @@ async def handle_twilio_stream(websocket):
         # Connect to OpenAI Realtime
         print("🔄 Connecting to OpenAI Realtime...")
         async with websockets.connect(
-            OPENAI_URL,
-            additional_headers={                  # ✅ correct
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "OpenAI-Beta": "realtime=v1"
-            }
+            OPENAI_URL
         ) as openai_ws:
             print("✅ Connected to OpenAI Realtime!")
             
@@ -28,11 +24,17 @@ async def handle_twilio_stream(websocket):
             await openai_ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
-                    "modalities": ["text", "audio"],
-                    "instructions": "You are a helpful AI receptionist. Be concise and friendly.",
-                    "voice": "alloy",
-                    "input_audio_format": "pcm16",
-                    "output_audio_format": "pcm16",
+                    "type": "realtime",
+                    "instructions": "You are a helpful AI receptionist.",
+                    "audio": {
+                    "input": {
+                        "format": { "type": "audio/pcm", "rate": 24000 }
+                    },
+                    "output": {
+                        "format": { "type": "audio/pcm", "rate": 24000 },
+                        "voice": "alloy"
+                    }
+                    }
                 }
             }))
             print("📤 Session config sent")
