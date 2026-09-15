@@ -17,7 +17,7 @@ async def handle_twilio_stream(websocket):
         print("🔄 Connecting to OpenAI Realtime...")
         async with websockets.connect(
             OPENAI_URL,
-            extra_headers={
+            additional_headers={                  # ✅ correct
                 "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "OpenAI-Beta": "realtime=v1"
             }
