@@ -3,30 +3,15 @@ import websockets
 import os
 
 async def handle_twilio_stream(websocket):
-    print("🔗 WebSocket connection attempt")
-    print(f"📋 Path: {websocket.path}")
-    
+    print("🔗 Client connected!")
     try:
-        await websocket.accept()
-        print("✅ WebSocket connection accepted!")
-        
-        while True:
-            try:
-                message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
-                print(f"📩 Received: {message[:200]}...")
-                
-                # Send a test response
-                await websocket.send('{"event": "media", "media": {"payload": "SGVsbG8gZnJvbSBBSSBSZWNlcHRpb25pc3Qh"}}')
-                print("📤 Sent test audio response")
-                
-            except asyncio.TimeoutError:
-                print("⏳ No message received, keeping connection alive")
-            except websockets.exceptions.ConnectionClosed:
-                print("🔌 Twilio disconnected")
-                break
-                
+        async for message in websocket:
+            print(f"📩 Received: {message[:100]}")
+            await websocket.send(f"Echo: {message}")
+    except websockets.exceptions.ConnectionClosed:
+        print("🔌 Client disconnected")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Handler error: {e}")
         import traceback
         traceback.print_exc()
 
