@@ -28,7 +28,7 @@ async def handle_twilio_stream(websocket):
         ) as openai_ws:
             print("✅ Connected to OpenAI Realtime!")
 
-            # Session config with server-side VAD
+            # Session config with g711_ulaw + server VAD
             await openai_ws.send(json.dumps({
                 "type": "session.update",
                 "session": {
@@ -57,19 +57,20 @@ async def handle_twilio_stream(websocket):
             }))
             print("📤 Session config sent (g711_ulaw + server VAD)")
 
-            # Task: Twilio → OpenAI
+            # Task 1: Twilio → OpenAI
             async def twilio_to_openai():
                 try:
                     async for twilio_msg in websocket:
                         try:
                             data = json.loads(twilio_msg)
-                            if data.get("event") == "media":
+                            event = data.get("event")
+                            if event == "media":
                                 audio = data["media"]["payload"]
                                 await openai_ws.send(json.dumps({
                                     "type": "input_audio_buffer.append",
                                     "audio": audio
                                 }))
-                            elif data.get("event") == "stop":
+                            elif event == "stop":
                                 print("📞 Twilio call ended")
                                 await openai_ws.close()
                                 return
@@ -78,7 +79,7 @@ async def handle_twilio_stream(websocket):
                 except websockets.exceptions.ConnectionClosed:
                     print("🔌 Twilio WebSocket closed")
 
-            # Task: OpenAI → Twilio
+            # Task 2: OpenAI → Twilio
             async def openai_to_twilio():
                 try:
                     async for openai_msg in openai_ws:
@@ -104,7 +105,7 @@ async def handle_twilio_stream(websocket):
                 except websockets.exceptions.ConnectionClosed:
                     print("🔌 OpenAI WebSocket closed")
 
-            # Run both tasks concurrently
+            # Run both directions concurrently
             await asyncio.gather(
                 twilio_to_openai(),
                 openai_to_twilio(),
