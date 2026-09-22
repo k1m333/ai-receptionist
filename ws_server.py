@@ -39,7 +39,7 @@ async def handle_twilio_stream(websocket):
                     ),
                     "audio": {
                         "input": {
-                            "format": {"type": "audio/pcmu"},   # ← µ-law
+                            "format": {"type": "g711_ulaw"},   # ← µ-law
                             "turn_detection": {
                                 "type": "server_vad",
                                 "threshold": 0.5,
@@ -48,7 +48,7 @@ async def handle_twilio_stream(websocket):
                             },
                         },
                         "output": {
-                            "format": {"type": "audio/pcmu"},   # ← µ-law
+                            "format": {"type": "g711_ulaw"},   # ← µ-law
                             "voice": "alloy",
                         },
                     },
@@ -84,6 +84,7 @@ async def handle_twilio_stream(websocket):
                         try:
                             data = json.loads(openai_msg)
                             event_type = data.get("type")
+                            print(f"📥 OpenAI event: {event_type}")   # ← log everything
 
                             if event_type == "response.output_audio.delta":
                                 audio = data.get("delta", "")
@@ -93,8 +94,8 @@ async def handle_twilio_stream(websocket):
                                         "media": {"payload": audio}
                                     }))
                                     print("🎵 Forwarded AI audio to Twilio")
-                            elif event_type in ("response.done", "response.audio.done"):
-                                print(f"✅ AI response complete ({event_type})")
+                            elif event_type == "response.done":
+                                print("✅ AI response complete")
                             elif event_type == "error":
                                 print(f"❌ OpenAI error: {data}")
                         except json.JSONDecodeError:
