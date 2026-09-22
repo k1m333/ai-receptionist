@@ -35,21 +35,20 @@ async def handle_twilio_stream(websocket):
                     "type": "realtime",
                     "instructions": (
                         "You are a helpful AI receptionist for an auto service center. "
-                        "Be concise, friendly, and helpful. Answer questions about hours, "
-                        "services, and pricing. Help callers book appointments."
+                        "Be concise, friendly, and helpful."
                     ),
                     "audio": {
                         "input": {
-                            "format": {"type": "audio/pcm", "rate": 24000},
+                            "format": {"type": "audio/pcmu"},   # ← µ-law
                             "turn_detection": {
                                 "type": "server_vad",
-                                "threshold": VAD_THRESHOLD,
-                                "prefix_padding_ms": PREFIX_PADDING_MS,
-                                "silence_duration_ms": SILENCE_DURATION_MS,
+                                "threshold": 0.5,
+                                "prefix_padding_ms": 300,
+                                "silence_duration_ms": 500,
                             },
                         },
                         "output": {
-                            "format": {"type": "audio/pcm", "rate": 24000},
+                            "format": {"type": "audio/pcmu"},   # ← µ-law
                             "voice": "alloy",
                         },
                     },
